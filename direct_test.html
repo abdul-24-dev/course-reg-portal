@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Face-API Test</title>
+    <style>
+        body { font-family: Arial; padding: 40px; background: #f0f4ff; }
+        .box { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h1 { color: #4f46e5; }
+        button { background: #4f46e5; color: white; border: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; cursor: pointer; margin: 10px 5px; }
+        button:hover { background: #4338ca; }
+        #log { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; height: 400px; overflow-y: auto; font-family: monospace; margin-top: 20px; white-space: pre-wrap; }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>Direct Face-API Test</h1>
+    <p>This page tests face-api.js loading step by step.</p>
+    <button onclick="test1()">1. Test JS File Access</button>
+    <button onclick="test2()">2. Load Face-API</button>
+    <button onclick="test3()">3. Load Models</button>
+    <button onclick="clearLog()">Clear Log</button>
+    <div id="log"></div>
+</div>
+
+<script>
+const logDiv = document.getElementById('log');
+
+function log(msg, type = '') {
+    const time = new Date().toLocaleTimeString();
+    const cls = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+    logDiv.innerHTML += `<span class="${cls}">[${time}] ${msg}\n</span>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function clearLog() {
+    logDiv.innerHTML = '';
+}
+
+async function test1() {
+    log('Testing if face-api.min.js is accessible via HTTP...');
+    try {
+        const response = await fetch('face-api.min.js', { method: 'HEAD' });
+        if (response.ok) {
+            const size = response.headers.get('content-length') || 'unknown';
+            log(`✓ face-api.min.js is accessible! (${parseInt(size/1024)} KB)`, 'success');
+        } else {
+            log(`✗ face-api.min.js returned HTTP ${response.status}`, 'error');
+        }
+    } catch (err) {
+        log(`✗ Failed to access face-api.min.js: ${err.message}`, 'error');
+    }
+}
+
+async function test2() {
+    log('Loading face-api.min.js...');
+    const script = document.createElement('script');
+    script.src = 'face-api.min.js';
+    
+    script.onload = () => {
+        log('✓ face-api.min.js loaded successfully!', 'success');
+        log(`faceapi object exists: ${typeof faceapi !== 'undefined'}`, typeof faceapi !== 'undefined' ? 'success' : 'error');
+        if (typeof faceapi !== 'undefined') {
+            log(`faceapi.nets: ${JSON.stringify(Object.keys(faceapi.nets))}`);
+        }
+    };
+    
+    script.onerror = () => {
+        log('✗ Failed to load face-api.min.js', 'error');
+        log('Check that the file exists and is valid JavaScript', 'error');
+    };
+    
+    document.head.appendChild(script);
+}
+
+async function test3() {
+    log('Testing model loading...');
+    
+    if (typeof faceapi === 'undefined') {
+        log('✗ face-api.js not loaded yet! Run Test 2 first.', 'error');
+        return;
+    }
+    
+    try {
+        log('Loading models from: /course-reg-portal/face-models');
+        await faceapi.nets.tinyFaceDetector.loadFromUri('/course-reg-portal/face-models');
+        log('✓ Tiny face detector loaded!', 'success');
+        
+        await faceapi.nets.faceLand68Net.loadFromUri('/course-reg-portal/face-models');
+        log('✓ Face landmark model loaded!', 'success');
+        
+        await faceapi.nets.faceRecognitionNet.loadFromUri('/course-reg-portal/face-models');
+        log('✓ Face recognition model loaded!', 'success');
+        
+        log('ALL MODELS LOADED SUCCESSFULLY!', 'success');
+    } catch (err) {
+        log(`✗ Model loading failed: ${err.message}`, 'error');
+        log('Check that all model files are in the face-models folder', 'error');
+    }
+}
+
+// Auto-run test 1
+window.onload = () => { setTimeout(test1, 500); };
+</script>
+</body>
+</html>

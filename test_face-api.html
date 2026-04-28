@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Face-API Models</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #log { background: #f0f0f0; padding: 10px; height: 300px; overflow-y: auto; font-family: monospace; margin-top: 10px; }
+    </style>
+    <script src="face-api.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h2>Face-API Model Test</h2>
+    <p>This page tests if face-api.js and models are loading correctly.</p>
+    
+    <button onclick="testLibrary()">1. Test face-api.js Load</button>
+    <button onclick="testModels()">2. Test Model Loading</button>
+    <button onclick="testCamera()">3. Test Camera</button>
+    <button onclick="testDetection()">4. Test Face Detection</button>
+    
+    <div id="log"></div>
+    <video id="video" style="display:none;"></video>
+</div>
+
+<script>
+const logDiv = document.getElementById('log');
+
+function log(msg, type = 'info') {
+    const time = new Date().toLocaleTimeString();
+    const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+    logDiv.innerHTML += `<div style="color:${color}">[${time}] ${msg}</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+async function testLibrary() {
+    log('Testing face-api.js library...');
+    if (typeof faceapi !== 'undefined') {
+        log('✓ face-api.js is loaded!', 'success');
+        log('Version/Details: ' + (faceapi.VERSION || 'N/A'));
+    } else {
+        log('✗ face-api.js is NOT loaded!', 'error');
+        log('Make sure face-api.min.js is in the project root.', 'error');
+    }
+}
+
+async function testModels() {
+    log('Testing model loading from: /course-reg-portal/face-models');
+    
+    if (typeof faceapi === 'undefined') {
+        log('✗ face-api.js not loaded yet!', 'error');
+        return;
+    }
+    
+    try {
+        const modelPath = '/course-reg-portal/face-models';
+        log('Loading tiny face detector...');
+        await faceapi.nets.tinyFaceDetector.loadFromUri(modelPath);
+        log('✓ Tiny face detector loaded!', 'success');
+        
+        log('Loading face landmark model...');
+        await faceapi.nets.faceLand68Net.loadFromUri(modelPath);
+        log('✓ Face landmark model loaded!', 'success');
+        
+        log('Loading face recognition model...');
+        await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
+        log('✓ Face recognition model loaded!', 'success');
+        
+        log('ALL MODELS LOADED SUCCESSFULLY!', 'success');
+    } catch (err) {
+        log('✗ Model loading failed: ' + err.message, 'error');
+        log('Check that all model files are in: C:\\xampp\\htdocs\\course-reg-portal\\face-models', 'error');
+    }
+}
+
+async function testCamera() {
+    log('Testing camera access...');
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        log('✓ Camera access granted!', 'success');
+        
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        video.style.display = 'block';
+        video.play();
+        
+        log('Camera is working. You should see video above.');
+        
+        // Stop after 3 seconds
+        setTimeout(() => {
+            stream.getTracks().forEach(track => track.stop());
+            video.style.display = 'none';
+            log('Camera stopped.');
+        }, 3000);
+    } catch (err) {
+        log('✗ Camera access failed: ' + err.message, 'error');
+    }
+}
+
+async function testDetection() {
+    log('Testing face detection...');
+    
+    if (typeof faceapi === 'undefined') {
+        log('✗ face-api.js not loaded!', 'error');
+        return;
+    }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        video.style.display = 'block';
+        video.play();
+        
+        log('Detecting faces...');
+        
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        
+        if (detection) {
+            log('✓ Face detected!', 'success');
+            log('Descriptor length: ' + detection.descriptor.length);
+        } else {
+            log('✗ No face detected. Make sure you are looking at the camera.', 'error');
+        }
+        
+        stream.getTracks().forEach(track => track.stop());
+        video.style.display = 'none';
+    } catch (err) {
+        log('✗ Detection failed: ' + err.message, 'error');
+    }
+}
+
+// Auto-test library on load
+window.onload = () => {
+    log('Page loaded. Click buttons above to test each component.');
+    setTimeout(testLibrary, 500);
+};
+</script>
+</body>
+</html>

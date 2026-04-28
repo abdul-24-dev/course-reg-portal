@@ -1,0 +1,27 @@
+# Sensitive files
+config.php
+.env
+*.log
+
+# Uploads (if contains private files)
+uploads/*
+!uploads/.gitkeep
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Dependencies (if any)
+node_modules/
+vendor/
+
+# XAMPP specific
+*.tmp
+session.save_path

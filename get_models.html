@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Download Face Models</title>
+    <style>
+        body { font-family: Arial; padding: 40px; background: #f0f4ff; }
+        .box { max-width: 700px; margin: 0 auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h1 { color: #4f46e5; }
+        button { background: #4f46e5; color: white; border: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; cursor: pointer; margin: 10px 5px; }
+        button:hover { background: #4338ca; }
+        button:disabled { background: #ccc; }
+        #status { margin-top: 20px; }
+        .item { padding: 12px; margin: 8px 0; background: #f9fafb; border-radius: 8px; border-left: 4px solid #ccc; }
+        .item.done { border-left-color: #22c55e; background: #f0fdf4; }
+        .item.fail { border-left-color: #ef4444; background: #fef2f2; }
+        .progress { background: #e5e7eb; height: 24px; border-radius: 12px; overflow: hidden; margin: 20px 0; }
+        .bar { background: linear-gradient(90deg, #4f46e5, #7c3aed); height: 100%; width: 0%; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>Download Face Recognition Models</h1>
+    <p>This will download the required models to use face recognition in your portal.</p>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <button onclick="download()" id="btn">Download Models</button>
+    <button onclick="checkFiles()" id="btnCheck">Check Files</button>
+    <div id="status"></div>
+</div>
+
+<script>
+const files = [
+    'tiny_face_detector_model-weights_manifest.json',
+    'tiny_face_detector_model-shard1',
+    'face_landmark_68_model-weights_manifest.json',
+    'face_landmark_68_model-shard1',
+    'face_recognition_model-weights_manifest.json',
+    'face_recognition_model-shard1',
+    'face_recognition_model-shard2'
+];
+
+const base = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/';
+
+async function download() {
+    const status = document.getElementById('status');
+    const bar = document.getElementById('bar');
+    const btn = document.getElementById('btn');
+    btn.disabled = true;
+    status.innerHTML = '<p>Starting download...</p>';
+    
+    let done = 0;
+    
+    for (let file of files) {
+        status.innerHTML += `<div class="item">Downloading ${file}...</div>`;
+        window.scrollTo(0, document.body.scrollHeight);
+        
+        try {
+            const res = await fetch(base + file);
+            const blob = await res.blob();
+            
+            // Save using a temporary form
+            const fd = new FormData();
+            fd.append('file', blob, file);
+            fd.append('save', '1');
+            
+            const save = await fetch('save_model.php', { method: 'POST', body: fd });
+            const result = await save.text();
+            
+            if (result === 'OK') {
+                done++;
+                bar.style.width = (done / files.length * 100) + '%';
+                const items = status.querySelectorAll('.item');
+                items[items.length - 1].className = 'item done';
+                items[items.length - 1].innerHTML = `✓ ${file} downloaded! (${(blob.size/1024).toFixed(1)} KB)`;
+            } else {
+                throw new Error('Save failed');
+            }
+        } catch (e) {
+            const items = status.querySelectorAll('.item');
+            items[items.length - 1].className = 'item fail';
+            items[items.length - 1].innerHTML = `✗ ${file} failed - ${e.message}`;
+        }
+    }
+    
+    btn.disabled = false;
+    if (done === files.length) {
+        status.innerHTML += '<h3 style="color:green">All models downloaded successfully!</h3><p>Now go back to <a href="register.php">registration</a> to use face recognition.</p>';
+    }
+}
+
+async function checkFiles() {
+    const status = document.getElementById('status');
+    status.innerHTML = '<p>Checking files...</p>';
+    
+    const res = await fetch('save_model.php?check=1');
+    const text = await res.text();
+    status.innerHTML = text;
+}
+</script>
+</body>
+</html>
