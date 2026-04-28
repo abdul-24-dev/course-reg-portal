@@ -11,6 +11,14 @@ COPY . .
 # Enable mod_rewrite for routing
 RUN a2enmod rewrite
 
+# Create Apache configuration
+RUN echo '<Directory /var/www/html>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>' > /etc/apache2/conf-available/app.conf && \
+a2enconf app
+
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html
 

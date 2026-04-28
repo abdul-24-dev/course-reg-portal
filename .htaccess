@@ -2,10 +2,14 @@
     RewriteEngine On
     RewriteBase /
     
-    # Allow direct access to files and directories
+    # Remove index.php from URLs
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    
-    # Route to index.php
-    RewriteRule ^ index.php [QSA,L]
+    RewriteRule ^(.*)$ index.php/$1 [L]
+</IfModule>
+
+# Enable PHP execution
+<IfModule mod_php.c>
+    php_flag display_errors on
+    php_flag log_errors on
 </IfModule>
