@@ -1,11 +1,17 @@
-FROM railway/nixpacks:latest as builder
-WORKDIR /app
-COPY . .
-RUN nix-shell -p php php82Packages.composer --run "composer install --no-dev"
+FROM php:8.2-alpine
 
-FROM railway/nixpacks:latest
 WORKDIR /app
-COPY --from=builder /app .
+
+# Install required PHP extensions
+RUN docker-php-ext-install mysqli pdo pdo_mysql
+
+# Copy application files
+COPY . .
+
+# Set environment variables
 ENV PORT=8080
+
 EXPOSE 8080
+
+# Start PHP built-in server
 CMD ["php", "-S", "0.0.0.0:8080"]
