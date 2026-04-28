@@ -1,0 +1,12 @@
+{
+  "name": "course-registration-portal",
+  "description": "Student Portal with Biometric Authentication",
+  "type": "project",
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {},
+  "autoload": {
+    "files": ["config.php"]
+  }
+}
