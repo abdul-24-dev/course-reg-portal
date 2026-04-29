@@ -1,12 +1,14 @@
 #!/bin/bash
 set -e
 
-# Use Railway's PORT or default to 8080
-PORT=${PORT:-8080}
+PORT=${PORT:-80}
 
-# Configure Apache to listen on the correct port
-sed -i "s/Listen 80/Listen 0.0.0.0:$PORT/" /etc/apache2/ports.conf
-sed -i "s/:80/:$PORT/" /etc/apache2/sites-enabled/000-default.conf
+# Only modify port if not the default
+if [ "$PORT" != "80" ]; then
+    # Clear any existing Listen directives and add new one
+    sed -i '/^Listen/d' /etc/apache2/ports.conf
+    echo "Listen 0.0.0.0:$PORT" >> /etc/apache2/ports.conf
+fi
 
 # Start Apache
 exec apache2-foreground
